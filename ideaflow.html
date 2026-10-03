@@ -143,15 +143,21 @@
   .topic:last-child{border-bottom:0}
   .topic h3{margin:0;font-size:15px;font-weight:600;display:flex;align-items:baseline;gap:8px}
   .topic h3 .n{font-size:12.5px;font-weight:400;color:var(--dim);font-variant-numeric:tabular-nums}
+  .topic h3 .mini{margin-left:auto;font-weight:400}
+  .topic .thread{margin-top:12px}
   .topic .answer{margin:9px 0 0;font-size:15.5px;line-height:1.7}
   .topic .ask{margin:9px 0 0;font-size:14.5px;line-height:1.65;color:var(--accent-text)}
   .plist{list-style:none;margin:14px 0 0;padding:0}
   .plist li{
-    display:flex;gap:10px;padding:7px 0;font-size:14.5px;line-height:1.65;
+    padding:8px 0;font-size:14.5px;line-height:1.65;
     border-top:1px solid var(--line);color:var(--text);
   }
   .plist li:first-child{border-top:0;padding-top:2px}
-  .plist time{color:var(--dim);font-size:12.5px;font-variant-numeric:tabular-nums;flex:none;padding-top:2px}
+  .plist .lihead{display:flex;gap:10px;align-items:baseline}
+  .plist time{color:var(--dim);font-size:12.5px;font-variant-numeric:tabular-nums;flex:none}
+  .plist .litext{flex:1;min-width:0;word-break:break-word;white-space:pre-wrap}
+  .plist .mini{flex:none;align-self:flex-start}
+  .plist .thread{margin-top:10px}
 
   /* ---------- empty ---------- */
   .empty{padding:56px 0 40px;max-width:44ch}
@@ -231,6 +237,8 @@
   .status.warn{color:var(--dim)}
   .sep-line{border:0;border-top:1px solid var(--line);margin:24px 0 0}
   .dlg-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:24px}
+  .verline{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--dim);line-height:1.7}
+  .verline b{color:var(--text);font-weight:600}
 
   @media (max-width:560px){
     .bar{padding:0 12px;gap:2px}
@@ -331,10 +339,13 @@
       <label>数据</label>
       <div class="rows">
         <button class="btn" id="btnExport">导出 JSON</button>
+        <button class="btn" id="btnCopyJson">复制 JSON</button>
         <button class="btn" id="btnImport">导入 JSON</button>
       </div>
       <div class="hint">导出文件含你的想法与讨论，<b>不含</b>密钥。</div>
     </div>
+
+    <div class="verline">想法池 <b>v1.5</b> · 2026-10-03（主题可讨论 / 单条可讨论 / 自动同步）</div>
 
     <div class="dlg-foot">
       <button class="btn" id="btnCloseSettings">关闭</button>
@@ -511,6 +522,21 @@ const SYS_DISCUSS = [
   "7. 不要用标题、列表、代码块。最多用一处 **加粗** 标出关键词。"
 ].join("\n");
 
+/* 主题级讨论：站得比单条想法高一层，看"这一整类"合起来说明了什么 */
+const SYS_DISCUSS_TOPIC = [
+  "你在和一个人讨论他的一「类」想法 —— 这些想法是他随手记的，被 AI 聚类到同一个主题下。",
+  "你要站得比单条想法高一层，看的是「合起来」。",
+  "",
+  "硬规则：",
+  "1. 第一句就要有实质内容。禁止复述、禁止「我理解你想说的是」这类开场。",
+  "2. 重点指出：反复出现的模式、彼此矛盾的地方、他显然没意识到的前提。",
+  "3. 直接给判断。不同意就反驳，并说清理由。",
+  "4. 可以直说这一堆里哪几条其实不该放在一起。",
+  "5. 最多提一个具体问题，具体到他能一句话回答。",
+  "6. 只要 3-5 句、150 字以内。",
+  "7. 不要用标题、列表、代码块。最多用一处 **加粗** 标出关键词。"
+].join("\n");
+
 const SYS_ORGANIZE = [
   "你在帮用户整理他随手记下的一堆零散想法。",
   "只输出 JSON，不要任何解释文字、不要 code fence。",
@@ -593,25 +619,42 @@ function extractJson(raw){
 }
 
 /* ========== 讨论 ========== */
-async function discuss(ideaId, text){
-  const idea = getItem(ideaId);
-  if (!idea || state.busy[ideaId]) return;
+async function discuss(id, text){
+  const idea = getItem(id);
+  const topic = idea ? null : topicById(id);
+  if ((!idea && !topic) || state.busy[id]) return;
+
   if (text && text.trim()){
     const t = now();
-    state.items.push({ id: uid(), kind: "msg", parentId: ideaId, role: "user",
+    state.items.push({ id: uid(), kind: "msg", parentId: id, role: "user",
       text: text.trim(), ts: t, updatedAt: t, deleted: false });
   }
-  state.openThreads[ideaId] = true;
-  state.busy[ideaId] = true;
+  state.openThreads[id] = true;
+  state.busy[id] = true;
   save(); render();
 
-  const history = msgsOf(ideaId).map((m) => ({
+  const history = msgsOf(id).map((m) => ({
     role: m.role === "ai" ? "assistant" : "user",
     content: m.text
   }));
+
+  let sys, opening;
+  if (idea){
+    sys = SYS_DISCUSS;
+    opening = "【我记下的想法】" + idea.text;
+  }else{
+    sys = SYS_DISCUSS_TOPIC;
+    const list = alive(state.items).filter((x) => x.kind === "idea" && x.topicId === id);
+    opening = "【这一类的名字】" + topic.name + "\n"
+      + "【这一类里的 " + list.length + " 条想法】\n"
+      + list.map((x, i) => (i + 1) + ". " + String(x.text).replace(/\n/g, " ")).join("\n");
+    if (topic.answer) opening += "\n【AI 之前对这一类的判断】" + topic.answer;
+    if (topic.ask) opening += "\n【AI 之前提的问题】" + topic.ask;
+  }
+
   const messages = [
-    { role: "system", content: SYS_DISCUSS },
-    { role: "user", content: "【我记下的想法】" + idea.text }
+    { role: "system", content: sys },
+    { role: "user", content: opening }
   ].concat(history);
 
   let reply, isErr = false;
@@ -623,9 +666,9 @@ async function discuss(ideaId, text){
     isErr = true;
   }
   const t2 = now();
-  state.items.push({ id: uid(), kind: "msg", parentId: ideaId, role: "ai",
+  state.items.push({ id: uid(), kind: "msg", parentId: id, role: "ai",
     text: reply, err: isErr, ts: t2, updatedAt: t2, deleted: false });
-  state.busy[ideaId] = false;
+  state.busy[id] = false;
   save(); render(); scheduleSync();
 }
 
@@ -877,6 +920,44 @@ function render(){
 }
 const keepScroll = () => { _keepY = window.scrollY; };
 
+/* 讨论线程 —— 时间线与主题视图共用，两边行为完全一致 */
+function threadHtml(id){
+  if (!state.openThreads[id]) return "";
+  const th = msgsOf(id);
+  let html = '<div class="thread">';
+  for (const m of th){
+    if (m.role === "ai"){
+      html += '<div class="msg ' + (m.err ? "err" : "ai") + '">' + (m.err ? esc(m.text) : md(m.text)) + "</div>";
+    }else{
+      html += '<div class="msg me">' + esc(m.text) + "</div>";
+    }
+  }
+  if (state.busy[id]){
+    html += '<div class="pending" role="status">AI 正在回应…</div>';
+  }else{
+    html += '<div class="reply"><textarea data-ask="' + id + '" rows="1"'
+      + ' placeholder="追问、反驳、补充…"></textarea>'
+      + '<button class="send" data-act="ask" data-id="' + id + '">发送</button></div>';
+  }
+  html += "</div>";
+  return html;
+}
+
+/* 主题视图里的一条想法：和时间线一样，能单独展开讨论 */
+function plistItemHtml(it){
+  const n = msgsOf(it.id).length;
+  const open = !!state.openThreads[it.id];
+  return '<li data-id="' + it.id + '">'
+    + '<div class="lihead">'
+    + "<time>" + hhmm(it.ts) + "</time>"
+    + '<span class="litext">' + esc(it.text) + "</span>"
+    + '<button class="mini" data-act="toggle" data-id="' + it.id + '">'
+    + (open ? "收起" : (n ? "讨论 " + n : "讨论")) + "</button>"
+    + "</div>"
+    + threadHtml(it.id)
+    + "</li>";
+}
+
 function viewTimeline(){
   const list = ideas();
   if (!list.length){
@@ -913,24 +994,7 @@ function viewTimeline(){
       + (open ? "收起" : (th.length ? "继续讨论" : "讨论")) + "</button>"
       + '<button class="mini del" data-act="del" data-id="' + it.id + '">删除</button>'
       + "</span></div>";
-    if (open){
-      html += '<div class="thread">';
-      for (const m of th){
-        if (m.role === "ai"){
-          html += '<div class="msg ' + (m.err ? "err" : "ai") + '">' + (m.err ? esc(m.text) : md(m.text)) + "</div>";
-        }else{
-          html += '<div class="msg me">' + esc(m.text) + "</div>";
-        }
-      }
-      if (state.busy[it.id]){
-        html += '<div class="pending" role="status">AI 正在回应…</div>';
-      }else{
-        html += '<div class="reply"><textarea data-ask="' + it.id + '" rows="1"'
-          + ' placeholder="追问、反驳、补充…"></textarea>'
-          + '<button class="send" data-act="ask" data-id="' + it.id + '">发送</button></div>';
-      }
-      html += "</div>";
-    }
+    html += threadHtml(it.id);
     html += "</li>";
   }
   if (openList) html += "</ul>";
@@ -960,13 +1024,18 @@ function viewTopics(){
   }
   for (const tp of ts){
     const list = grouped[tp.id] || [];
+    const tn = msgsOf(tp.id).length;
+    const topen = !!state.openThreads[tp.id];
     html += '<section class="topic">';
-    html += "<h3>" + esc(tp.name) + '<span class="n">' + list.length + " 条</span></h3>";
+    html += "<h3>" + esc(tp.name) + '<span class="n">' + list.length + " 条</span>"
+      + '<button class="mini" data-act="toggle" data-id="' + tp.id + '">'
+      + (topen ? "收起" : (tn ? "讨论 " + tn : "讨论")) + "</button></h3>";
     if (tp.answer) html += '<p class="answer">' + esc(tp.answer) + "</p>";
     if (tp.ask) html += '<p class="ask">' + esc(tp.ask) + "</p>";
+    html += threadHtml(tp.id);
     if (list.length){
       html += '<ul class="plist">';
-      for (const it of list) html += "<li><time>" + hhmm(it.ts) + "</time><span>" + esc(it.text) + "</span></li>";
+      for (const it of list) html += plistItemHtml(it);
       html += "</ul>";
     }
     html += "</section>";
@@ -974,7 +1043,7 @@ function viewTopics(){
   if (loose.length){
     html += '<section class="topic"><h3>还没归类的<span class="n">' + loose.length + " 条</span></h3>"
       + '<ul class="plist">';
-    for (const it of loose) html += "<li><time>" + hhmm(it.ts) + "</time><span>" + esc(it.text) + "</span></li>";
+    for (const it of loose) html += plistItemHtml(it);
     html += "</ul></section>";
   }
   return html;
@@ -1060,13 +1129,27 @@ function submitIdea(){
 }
 
 function exportJson(){
-  const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: "application/json" });
+  const json = JSON.stringify(buildPayload(), null, 2);
+  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = "ideaflow-" + dayKey(now()) + ".json";
+  a.style.display = "none";
+  document.body.appendChild(a);   // 必须挂进 DOM —— 游离的 <a> 在部分浏览器里不会真的触发下载
   a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-  toast("已导出");
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  toast("已请求下载，看浏览器的下载文件夹；没出现文件就点「复制 JSON」", 6000);
+}
+
+async function copyJson(){
+  const json = JSON.stringify(buildPayload(), null, 2);
+  try{
+    await navigator.clipboard.writeText(json);
+    toast("JSON 已复制（" + json.length + " 字符），粘进记事本存成 .json 即可");
+  }catch(e){
+    window.prompt("自动复制不可用，请手动全选复制：", json);
+  }
 }
 function importJson(e){
   const f = e.target.files && e.target.files[0];
@@ -1139,6 +1222,7 @@ function bind(){
   $("#btnPull").addEventListener("click", () => { saveSettingsFromForm(); pullOnly(); });
   $("#btnPush").addEventListener("click", () => { saveSettingsFromForm(); pushOnly(); });
   $("#btnExport").addEventListener("click", exportJson);
+  $("#btnCopyJson").addEventListener("click", copyJson);
   $("#btnImport").addEventListener("click", () => $("#filePicker").click());
   $("#filePicker").addEventListener("change", importJson);
 }
