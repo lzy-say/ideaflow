@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>想法池</title>
+<style>
+  :root{
+    --maxw: 660px;
+    --ease: cubic-bezier(.16,1,.3,1);
+
+    --bg:#FCFCFC; --surface:#FFFFFF; --surface-2:#F6F6F7; --surface-3:#EFEFF1;
+    --line:#E8E8EA; --line-strong:#D9D9DD;
+    --text:#18181B; --dim:#6E6E78;
+    --accent:#5E6AD2; --accent-fg:#FFFFFF; --accent-soft:#EDEFFA; --accent-text:#4A54BE;
+    --danger:#C0392B; --danger-soft:#FBEDEB;
+    --sel:#DCE0F6;
+    --radius:10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0E0E10; --surface:#17171A; --surface-2:#1D1D21; --surface-3:#242429;
+      --line:#28282E; --line-strong:#3A3A42;
+      --text:#EDEDEF; --dim:#8B8B94;
+      --accent:#7C86E8; --accent-fg:#0E0E10; --accent-soft:#1E2135; --accent-text:#9AA2F0;
+      --danger:#E57368; --danger-soft:#2A1D1C;
+      --sel:#2C3152;
+    }
+  }
+
+  *{box-sizing:border-box}
+  html{ background:var(--bg); -webkit-text-size-adjust:100% }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    padding-bottom:calc(112px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  button,input,textarea{font:inherit;color:inherit}
+  button{cursor:pointer;background:none;border:0;padding:0}
+  ::selection{background:var(--sel)}
+  textarea,input{caret-color:var(--accent)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  *{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+  *::-webkit-scrollbar{width:11px;height:11px}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:99px;border:3px solid var(--bg)}
+  *::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+
+  /* ---------- header ---------- */
+  header{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:1px solid var(--line)}
+  .bar{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:6px;min-height:52px;padding:0 16px}
+  .brand{font-size:15px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+  .tabs{display:flex;align-self:stretch;margin-left:6px}
+  .tabs button{
+    padding:0 11px;font-size:14px;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-1px;
+    transition:color .15s var(--ease),border-color .15s var(--ease);
+  }
+  .tabs button:hover{color:var(--text)}
+  .tabs button[aria-selected="true"]{color:var(--text);font-weight:600;border-bottom-color:var(--accent)}
+  .acts{display:flex;align-items:center;gap:2px;margin-left:auto}
+  .ghost{
+    padding:6px 9px;border-radius:7px;font-size:13.5px;color:var(--dim);white-space:nowrap;
+    transition:color .15s var(--ease),background-color .15s var(--ease);
+  }
+  .ghost:hover{color:var(--text);background:var(--surface-2)}
+  .ghost:disabled{opacity:.45;cursor:default;color:var(--dim);background:none}
+  #btnOrganize{color:var(--accent-text);font-weight:600}
+  #btnOrganize:hover{background:var(--accent-soft)}
+
+  main{max-width:var(--maxw);margin:0 auto;padding:20px 16px 0}
+
+  /* ---------- timeline ---------- */
+  .day{display:flex;align-items:baseline;gap:8px;padding:22px 0 10px}
+  .day:first-child{padding-top:6px}
+  .day b{font-size:12.5px;font-weight:600;letter-spacing:.02em}
+  .day span{font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+  .feed{list-style:none;margin:0;padding:0}
+  .item{border-top:1px solid var(--line);padding:16px 0 15px;transition:background-color .15s var(--ease)}
+  .item:first-child{border-top:0}
+  .body{margin:0;font-size:16px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+  .meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:9px;font-size:12.5px;color:var(--dim)}
+  .meta .n{font-variant-numeric:tabular-nums}
+  .tag{color:var(--accent-text);font-weight:500}
+  .sep{color:var(--line-strong)}
+  .meta .acts2{display:flex;gap:2px;margin-left:auto}
+  .mini{
+    padding:4px 8px;border-radius:6px;font-size:12.5px;color:var(--dim);
+    transition:color .15s var(--ease),background-color .15s var(--ease);
+  }
+  .mini:hover{color:var(--text);background:var(--surface-2)}
+  .mini.del:hover{color:var(--danger);background:var(--danger-soft)}
+
+  /* ---------- thread ---------- */
+  .thread{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .msg{font-size:15px;line-height:1.7;word-break:break-word}
+  .msg.me{
+    background:var(--surface-2);border-radius:var(--radius);padding:9px 13px;
+    white-space:pre-wrap;align-self:flex-start;max-width:92%;
+  }
+  .msg.ai{border-left:1px solid var(--line-strong);padding-left:13px}
+  .msg.err{border-left:1px solid var(--danger);padding-left:13px;color:var(--danger)}
+  .msg p{margin:0 0 9px}
+  .msg p:last-child{margin-bottom:0}
+  .msg ul,.msg ol{margin:0 0 9px;padding-left:20px}
+  .msg li{margin:2px 0}
+  .msg h4{margin:0 0 6px;font-size:14px;font-weight:600}
+  .msg code{
+    background:var(--surface-3);padding:1.5px 5px;border-radius:5px;
+    font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  .msg strong{font-weight:600}
+  .msg blockquote{margin:0 0 9px;padding-left:13px;border-left:1px solid var(--line);color:var(--dim)}
+  .msg hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+
+  .pending{font-size:13px;color:var(--dim);padding-left:13px}
+
+  .reply{display:flex;gap:8px;align-items:flex-end;margin-top:2px}
+  .reply textarea{
+    flex:1;min-height:38px;max-height:140px;padding:9px 12px;border-radius:var(--radius);
+    border:1px solid var(--line);background:var(--surface);resize:none;font-size:14.5px;
+    transition:border-color .15s var(--ease);
+  }
+  .reply textarea::placeholder{color:var(--dim)}
+  .reply textarea:focus{outline:none;border-color:var(--accent)}
+  .reply textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .send{
+    padding:9px 14px;border-radius:var(--radius);background:var(--accent);color:var(--accent-fg);
+    font-size:13.5px;font-weight:600;white-space:nowrap;
+    transition:opacity .15s var(--ease),transform .15s var(--ease);
+  }
+  .send:hover{opacity:.9}
+  .send:active{transform:scale(.97)}
+  .send:disabled{opacity:.4;cursor:default;transform:none}
+
+  /* ---------- topics ---------- */
+  .ov{padding:2px 0 20px;border-bottom:1px solid var(--line)}
+  .ov-label{font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--accent-text)}
+  .ov p{margin:7px 0 0;font-size:16px;line-height:1.7}
+  .topic{padding:22px 0;border-bottom:1px solid var(--line)}
+  .topic:last-child{border-bottom:0}
+  .topic h3{margin:0;font-size:15px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+  .topic h3 .n{font-size:12.5px;font-weight:400;color:var(--dim);font-variant-numeric:tabular-nums}
+  .topic .answer{margin:9px 0 0;font-size:15.5px;line-height:1.7}
+  .topic .ask{margin:9px 0 0;font-size:14.5px;line-height:1.65;color:var(--accent-text)}
+  .plist{list-style:none;margin:14px 0 0;padding:0}
+  .plist li{
+    display:flex;gap:10px;padding:7px 0;font-size:14.5px;line-height:1.65;
+    border-top:1px solid var(--line);color:var(--text);
+  }
+  .plist li:first-child{border-top:0;padding-top:2px}
+  .plist time{color:var(--dim);font-size:12.5px;font-variant-numeric:tabular-nums;flex:none;padding-top:2px}
+
+  /* ---------- empty ---------- */
+  .empty{padding:56px 0 40px;max-width:44ch}
+  .empty h2{margin:0 0 10px;font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .empty p{margin:0 0 12px;font-size:15px;line-height:1.75;color:var(--dim)}
+  .empty p.strong{color:var(--text)}
+  .empty .hintline{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13.5px;line-height:1.8}
+
+  /* ---------- composer ---------- */
+  .composer{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);
+    border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .composer-inner{max-width:var(--maxw);margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+  #composerText{
+    flex:1;min-height:42px;max-height:150px;padding:11px 13px;border-radius:var(--radius);
+    border:1px solid var(--line);background:var(--surface);resize:none;font-size:15px;
+    transition:border-color .15s var(--ease);
+  }
+  #composerText::placeholder{color:var(--dim)}
+  #composerText:focus{outline:none;border-color:var(--accent)}
+  #composerText:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .primary{
+    padding:11px 18px;border-radius:var(--radius);background:var(--accent);color:var(--accent-fg);
+    font-size:14px;font-weight:600;white-space:nowrap;
+    transition:opacity .15s var(--ease),transform .15s var(--ease);
+  }
+  .primary:hover{opacity:.9}
+  .primary:active{transform:scale(.97)}
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translate(-50%,6px);
+    background:var(--text);color:var(--bg);padding:9px 16px;border-radius:9px;font-size:13.5px;
+    max-width:min(90vw,440px);text-align:center;line-height:1.5;
+    opacity:0;pointer-events:none;transition:opacity .18s var(--ease),transform .18s var(--ease);z-index:60;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- settings ---------- */
+  dialog{
+    border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--text);
+    width:min(540px,calc(100vw - 24px));max-height:88vh;
+    box-shadow:0 12px 32px -8px rgba(0,0,0,.28),0 2px 8px -2px rgba(0,0,0,.12);
+  }
+  dialog::backdrop{background:rgba(9,9,11,.42)}
+  .dlg{padding:22px;overflow:auto;max-height:88vh}
+  .dlg h2{margin:0 0 6px;font-size:17px;font-weight:600;letter-spacing:-.01em}
+  .dlg .lead{margin:0 0 4px;font-size:13.5px;color:var(--dim);line-height:1.7}
+  .field{margin-top:18px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field input[type=text],.field input[type=password]{
+    width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--line);
+    background:var(--bg);font-size:14px;transition:border-color .15s var(--ease);
+  }
+  .field input::placeholder{color:var(--dim)}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .field input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .field .check{display:flex;gap:9px;align-items:flex-start;font-size:14px;cursor:pointer}
+  .check input{margin:3px 0 0;accent-color:var(--accent);flex:none}
+  .hint{font-size:12.5px;color:var(--dim);margin-top:7px;line-height:1.7}
+  .hint code{background:var(--surface-3);padding:1.5px 5px;border-radius:5px;font-size:12px}
+  .hint a{color:var(--accent-text)}
+  .hint .mixwarn{display:block;margin-top:6px;color:var(--danger);line-height:1.6}
+  .rows{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .btn{
+    padding:8px 14px;border-radius:8px;border:1px solid var(--line);font-size:13.5px;background:var(--surface);
+    transition:border-color .15s var(--ease),color .15s var(--ease),background-color .15s var(--ease);
+  }
+  .btn:hover{border-color:var(--line-strong);background:var(--surface-2)}
+  .btn.solid{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+  .btn.solid:hover{opacity:.9;background:var(--accent)}
+  .btn:disabled{opacity:.45;cursor:default}
+  .status{font-size:12.5px;margin-top:10px;min-height:18px;line-height:1.6;color:var(--dim)}
+  .status.ok{color:var(--text)}
+  .status.bad{color:var(--danger)}
+  .status.warn{color:var(--dim)}
+  .sep-line{border:0;border-top:1px solid var(--line);margin:24px 0 0}
+  .dlg-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:24px}
+
+  @media (max-width:560px){
+    .bar{padding:0 12px;gap:2px}
+    .tabs{margin-left:0}
+    .tabs button{padding:0 8px;font-size:13.5px}
+    .ghost{padding:6px 6px;font-size:13px}
+    main{padding:16px 12px 0}
+    .composer{padding-left:12px;padding-right:12px}
+    .day{padding-top:18px}
+    .body{font-size:15.5px}
+    .msg{font-size:14.5px}
+    .ov p,.topic .answer{font-size:15px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand">想法池</div>
+    <nav class="tabs" role="tablist">
+      <button id="tabTimeline" role="tab" aria-selected="true">时间线</button>
+      <button id="tabTopics" role="tab" aria-selected="false">主题</button>
+    </nav>
+    <div class="acts">
+      <button class="ghost" id="btnOrganize">整理</button>
+      <button class="ghost" id="btnSync">同步</button>
+      <button class="ghost" id="btnSettings">设置</button>
+    </div>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<div class="composer">
+  <div class="composer-inner">
+    <textarea id="composerText" rows="1" placeholder="想到什么就写什么…" aria-label="记下一条想法"></textarea>
+    <button class="primary" id="btnAdd">记下</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlgSettings">
+  <div class="dlg">
+    <h2>设置</h2>
+    <p class="lead">密钥只存在这台设备的浏览器里，不上传任何地方。</p>
+
+    <div class="field">
+      <label for="setUrl">接口地址（要填完整 URL）</label>
+      <input id="setUrl" type="text" placeholder="https://api.deepseek.com/chat/completions">
+      <div class="hint">DeepSeek 就是 <code>https://api.deepseek.com/chat/completions</code>。<br>
+        只填到 <code>https://api.deepseek.com</code> 会 404；填 <code>/anthropic</code> 那套协议也会失败。</div>
+    </div>
+    <div class="field">
+      <label for="setModel">模型名</label>
+      <input id="setModel" type="text" placeholder="deepseek-chat">
+    </div>
+    <div class="field">
+      <label for="setKey">API Key</label>
+      <input id="setKey" type="password" placeholder="sk-…" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="check"><input type="checkbox" id="setMock">
+        <span>用假接口（不联网也能试，回复是模拟的）</span></label>
+      <div class="hint">打开后不发真实请求，用来验证整条链路。正式用请关掉。</div>
+    </div>
+    <div class="rows"><button class="btn" id="btnTestAI">测试 AI 连接</button></div>
+    <div class="status" id="aiStatus"></div>
+
+    <hr class="sep-line">
+
+    <div class="field">
+      <label for="setGistToken">GitHub Token（跨设备同步用）</label>
+      <input id="setGistToken" type="password" placeholder="ghp_… 或 github_pat_…" autocomplete="off">
+      <div class="hint">需要 <code>gist</code> 权限。用自己的新 token，<b>不要和 Thoughtflow 共用同一个 Gist</b>。</div>
+    </div>
+    <div class="field">
+      <label for="setGistId">同步仓库 ID（留空则自动新建）</label>
+      <input id="setGistId" type="text" placeholder="留空 = 首次同步时自动创建">
+      <div class="hint" id="gistLinkHint"></div>
+    </div>
+    <div class="field">
+      <label class="check"><input type="checkbox" id="setAutoSync">
+        <span>自动同步（打开时拉一次，记完自动推）</span></label>
+      <div class="hint">关掉后只在你点「同步」时同步。</div>
+    </div>
+    <div class="rows">
+      <button class="btn" id="btnSyncNow">立即同步</button>
+      <button class="btn" id="btnPull">只拉取云端</button>
+      <button class="btn" id="btnPush">只推送本地</button>
+    </div>
+    <div class="status" id="syncStatus"></div>
+
+    <hr class="sep-line">
+
+    <div class="field">
+      <label>数据</label>
+      <div class="rows">
+        <button class="btn" id="btnExport">导出 JSON</button>
+        <button class="btn" id="btnImport">导入 JSON</button>
+      </div>
+      <div class="hint">导出文件含你的想法与讨论，<b>不含</b>密钥。</div>
+    </div>
+
+    <div class="dlg-foot">
+      <button class="btn" id="btnCloseSettings">关闭</button>
+      <button class="btn solid" id="btnSaveSettings">保存</button>
+    </div>
+  </div>
+</dialog>
+
+<input type="file" id="filePicker" accept="application/json" hidden>
+
+<script>
+"use strict";
+
+/* ========== 状态 ========== */
+const DATA_KEY = "ideaflow.data.v1";
+const SET_KEY  = "ideaflow.settings.v1";
+const GIST_API = "https://api.github.com/gists";
+const GIST_FILE = "ideaflow.json";
+
+const DEFAULT_SETTINGS = {
+  apiUrl: "https://api.deepseek.com/chat/completions",
+  model: "deepseek-chat",
+  apiKey: "",
+  gistToken: "",
+  gistId: "",
+  gistHtmlUrl: "",
+  mock: false,
+  autoSync: true
+};
+
+const state = {
+  items: [],
+  topics: [],
+  overview: "",
+  overviewAt: 0,
+  lastOrganizedAt: 0,
+  settings: Object.assign({}, DEFAULT_SETTINGS),
+  view: "timeline",
+  openThreads: {},
+  busy: {}
+};
+
+/* ========== 工具 ========== */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
+const now = () => Date.now();
+const uid = () => Math.random().toString(36).slice(2, 9) + now().toString(36).slice(-4);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const pad2 = (n) => (n < 10 ? "0" + n : "" + n);
+const hhmm = (ts) => { const d = new Date(ts); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+const dayKey = (ts) => { const d = new Date(ts); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); };
+
+function dayLabel(key){
+  const d = new Date(key + "T00:00:00");
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d - today) / 86400000);
+  const md = (d.getMonth() + 1) + "月" + d.getDate() + "日";
+  if (diff === 0) return { main: "今天", sub: md };
+  if (diff === -1) return { main: "昨天", sub: md };
+  return { main: md, sub: ["周日","周一","周二","周三","周四","周五","周六"][d.getDay()] };
+}
+
+/* 极简 Markdown → HTML。先转义再做行内替换，因此不会引入注入。 */
+function md(raw){
+  const src = String(raw == null ? "" : raw).replace(/\r\n/g, "\n").trim();
+  if (!src) return "";
+  const inline = (t) => esc(t)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*\w])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  const out = [];
+  let list = null;
+  const closeList = () => { if (list){ out.push("</" + list + ">"); list = null; } };
+  for (const line of src.split("\n")){
+    const t = line.trim();
+    if (!t){ closeList(); continue; }
+    let m;
+    if ((m = t.match(/^#{1,6}\s+(.+)$/))){ closeList(); out.push("<h4>" + inline(m[1]) + "</h4>"); continue; }
+    if ((m = t.match(/^[-*+]\s+(.+)$/))){ if (list !== "ul"){ closeList(); out.push("<ul>"); list = "ul"; } out.push("<li>" + inline(m[1]) + "</li>"); continue; }
+    if ((m = t.match(/^\d+[.)]\s+(.+)$/))){ if (list !== "ol"){ closeList(); out.push("<ol>"); list = "ol"; } out.push("<li>" + inline(m[1]) + "</li>"); continue; }
+    if (/^([-*_])\1{2,}$/.test(t)){ closeList(); out.push("<hr>"); continue; }
+    if ((m = t.match(/^>\s?(.*)$/))){ closeList(); out.push("<blockquote>" + inline(m[1]) + "</blockquote>"); continue; }
+    closeList();
+    out.push("<p>" + inline(t) + "</p>");
+  }
+  closeList();
+  return out.join("");
+}
+
+/* ========== 存取 ========== */
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(DATA_KEY) || "{}");
+    state.items = Array.isArray(d.items) ? d.items : [];
+    state.topics = Array.isArray(d.topics) ? d.topics : [];
+    state.overview = d.overview || "";
+    state.overviewAt = d.overviewAt || 0;
+    state.lastOrganizedAt = d.lastOrganizedAt || 0;
+  }catch(e){ state.items = []; state.topics = []; }
+  try{ Object.assign(state.settings, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); }catch(e){}
+}
+function save(){
+  try{
+    localStorage.setItem(DATA_KEY, JSON.stringify({
+      items: state.items, topics: state.topics,
+      overview: state.overview, overviewAt: state.overviewAt,
+      lastOrganizedAt: state.lastOrganizedAt
+    }));
+  }catch(e){ toast("本地保存失败：浏览器存储可能已满"); }
+  try{ localStorage.setItem(SET_KEY, JSON.stringify(state.settings)); }catch(e){}
+}
+
+/* ========== 数据（删除用墓碑，多设备才不会被复活） ========== */
+const alive = (list) => list.filter((x) => x && !x.deleted);
+const ideas = () => alive(state.items).filter((x) => x.kind === "idea")
+  .sort((a, b) => b.ts - a.ts);
+const msgsOf = (id) => alive(state.items).filter((x) => x.kind === "msg" && x.parentId === id)
+  .sort((a, b) => a.ts - b.ts);
+const topicById = (id) => alive(state.topics).find((t) => t.id === id) || null;
+const getItem = (id) => state.items.find((x) => x.id === id) || null;
+
+function addIdea(text){
+  const t = now();
+  state.items.push({ id: uid(), kind: "idea", text: text, ts: t, updatedAt: t, deleted: false, topicId: null });
+  save(); scheduleSync();
+}
+function removeItem(id){
+  const it = getItem(id);
+  if (!it) return;
+  it.deleted = true;
+  it.updatedAt = now();
+  save(); scheduleSync();
+}
+
+/* ========== 合并 ========== */
+function mergeById(local, remote){
+  const map = new Map();
+  for (const it of [].concat(local || [], remote || [])){
+    if (!it || !it.id) continue;
+    const old = map.get(it.id);
+    if (!old || (it.updatedAt || 0) > (old.updatedAt || 0)) map.set(it.id, it);
+  }
+  return Array.from(map.values());
+}
+function buildPayload(){
+  return {
+    app: "ideaflow", v: 1, savedAt: now(),
+    items: state.items, topics: state.topics,
+    overview: state.overview, overviewAt: state.overviewAt,
+    lastOrganizedAt: state.lastOrganizedAt
+  };
+}
+function applyPayload(p){
+  if (!p || typeof p !== "object") return;
+  state.items = mergeById(state.items, p.items);
+  state.topics = mergeById(state.topics, p.topics);
+  if ((p.overviewAt || 0) > state.overviewAt){ state.overview = p.overview || ""; state.overviewAt = p.overviewAt || 0; }
+  if ((p.lastOrganizedAt || 0) > state.lastOrganizedAt) state.lastOrganizedAt = p.lastOrganizedAt;
+}
+
+/* ========== AI ========== */
+const SYS_DISCUSS = [
+  "你在回应一个人随手记下的想法。这些想法零散、跳跃、常常还没成形。",
+  "",
+  "硬规则：",
+  "1. 第一句就要有实质内容。禁止用「我理解你想说的是」「听起来你……」这类复述开场，禁止总结他刚说过的话。",
+  "2. 禁止客套、禁止鼓励、禁止「这是个很好的问题」。",
+  "3. 直接给判断：关键在哪、他可能漏了什么、哪里想偏了。有明确观点就直说；不同意就反驳，并说清理由。",
+  "4. 他有疑问就直接答。答不了就写「这取决于 X」，并说清 X 是什么、怎么定。",
+  "5. 最多提一个具体问题，具体到他能一句话回答。不要问「你怎么看」这类空话。",
+  "6. 只要 3-5 句、150 字以内。宁可把一件事说透，不要面面俱到。",
+  "7. 不要用标题、列表、代码块。最多用一处 **加粗** 标出关键词。"
+].join("\n");
+
+const SYS_ORGANIZE = [
+  "你在帮用户整理他随手记下的一堆零散想法。",
+  "只输出 JSON，不要任何解释文字、不要 code fence。",
+  "JSON 字符串里不要用任何 Markdown 标记。"
+].join("\n");
+
+const aiReady = () => { const s = state.settings; return !!(s.mock || (s.apiKey && s.apiUrl && s.model)); };
+
+function explainApiError(code){
+  if (code === 401) return "密钥被拒（401）：API Key 不对或已失效。";
+  if (code === 402) return "余额不足（402）：DeepSeek 账户需要充值。";
+  if (code === 404) return "地址不对（404）：要填完整地址且以 /chat/completions 结尾，比如 https://api.deepseek.com/chat/completions。";
+  if (code === 400) return "请求被拒（400）：多半是模型名写错了。DeepSeek 用 deepseek-chat。";
+  if (code === 429) return "请求太频繁（429）：等一会儿再试。";
+  if (code >= 500) return "服务端出错（" + code + "）：不是你的问题，稍后再试。";
+  return "请求失败（" + code + "）。";
+}
+
+function mockReply(messages){
+  const last = String(messages[messages.length - 1].content || "");
+  if (/"topics"/.test(messages[0].content) || /【想法列表】/.test(last)){
+    const ids = (last.match(/id=([a-z0-9]+)/g) || []).map((s) => s.slice(3));
+    const half = Math.ceil(ids.length / 2) || 1;
+    const topics = [];
+    if (ids.slice(0, half).length) topics.push({ name: "待推进的事", ideaIds: ids.slice(0, half),
+      answer: "（模拟）这几条是要动手的事。先把最小的那条拆成下一步，别一次想全。",
+      ask: "这里面哪一条今天就能动？" });
+    if (ids.slice(half).length) topics.push({ name: "还没想清的", ideaIds: ids.slice(half),
+      answer: "（模拟）这几条更像在纠结，缺的是判断标准，不是信息。",
+      ask: "你判断这事成的标准是什么？" });
+    if (!topics.length) topics.push({ name: "零碎记录", ideaIds: [], answer: "（模拟）暂无内容。", ask: "" });
+    return JSON.stringify({ overview: "（模拟）攒了不少想法，其中一条值得今天深聊。", topics: topics });
+  }
+  return "（模拟回复）这条里真正卡住你的可能不是「怎么做」，而是你还没决定要不要做。"
+    + "如果目的是拿到一个能交出去的东西，那先降级成最小的一步比想全更划算。"
+    + "我倾向先动手再做判断。你手上现在缺的是信息还是决心？";
+}
+
+async function callAI(messages, temperature){
+  const s = state.settings;
+  if (s.mock){ await new Promise((r) => setTimeout(r, 450)); return mockReply(messages); }
+  if (!aiReady()) throw new Error("还没配置 API Key（点右上角「设置」）");
+  const res = await fetch(s.apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.apiKey },
+    body: JSON.stringify({ model: s.model, temperature: temperature == null ? 0.7 : temperature, messages: messages })
+  });
+  if (!res.ok) throw new Error(explainApiError(res.status));
+  const data = await res.json();
+  return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+}
+
+function extractJson(raw){
+  if (!raw) return null;
+  let t = String(raw).trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence) t = fence[1].trim();
+  const at = t.search(/[{[]/);
+  if (at < 0) return null;
+  const tail = t.slice(at);
+  try{ return JSON.parse(tail); }catch(e){}
+  const open = tail[0], close = open === "{" ? "}" : "]";
+  let depth = 0, inStr = false, slash = false;
+  for (let i = 0; i < tail.length; i++){
+    const c = tail[i];
+    if (inStr){
+      if (slash) slash = false;
+      else if (c === "\\") slash = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === open) depth++;
+    else if (c === close){
+      depth--;
+      if (depth === 0){ try{ return JSON.parse(tail.slice(0, i + 1)); }catch(e){ return null; } }
+    }
+  }
+  return null;
+}
+
+/* ========== 讨论 ========== */
+async function discuss(ideaId, text){
+  const idea = getItem(ideaId);
+  if (!idea || state.busy[ideaId]) return;
+  if (text && text.trim()){
+    const t = now();
+    state.items.push({ id: uid(), kind: "msg", parentId: ideaId, role: "user",
+      text: text.trim(), ts: t, updatedAt: t, deleted: false });
+  }
+  state.openThreads[ideaId] = true;
+  state.busy[ideaId] = true;
+  save(); render();
+
+  const history = msgsOf(ideaId).map((m) => ({
+    role: m.role === "ai" ? "assistant" : "user",
+    content: m.text
+  }));
+  const messages = [
+    { role: "system", content: SYS_DISCUSS },
+    { role: "user", content: "【我记下的想法】" + idea.text }
+  ].concat(history);
+
+  let reply, isErr = false;
+  try{
+    reply = await callAI(messages, 0.7);
+    if (!reply || !reply.trim()){ reply = "AI 返回了空内容，再试一次。"; isErr = true; }
+  }catch(e){
+    reply = (e && e.message) ? e.message : "AI 调用失败。";
+    isErr = true;
+  }
+  const t2 = now();
+  state.items.push({ id: uid(), kind: "msg", parentId: ideaId, role: "ai",
+    text: reply, err: isErr, ts: t2, updatedAt: t2, deleted: false });
+  state.busy[ideaId] = false;
+  save(); render(); scheduleSync();
+}
+
+/* ========== 批量整理 ========== */
+function buildOrganizePrompt(list){
+  const lines = list.map((it) => {
+    const tp = it.topicId && topicById(it.topicId) ? topicById(it.topicId).name : "";
+    return "- id=" + it.id + "｜" + new Date(it.ts).toLocaleString("zh-CN") + "｜" +
+      (tp ? "（上次归在：" + tp + "）" : "") + "\n  " + String(it.text).replace(/\n/g, " ");
+  });
+  return [
+    "【想法列表】共 " + list.length + " 条：",
+    lines.join("\n"),
+    "",
+    "按这个 JSON 结构输出（不要 code fence、不要多余文字、字符串里不要 Markdown 标记）：",
+    "{",
+    '  "overview": "对整体的观察，一句话，不超过 60 字",',
+    '  "topics": [',
+    "    {",
+    '      "name": "主题名，不超过 8 字",',
+    '      "ideaIds": ["上面出现过的 id"],',
+    '      "answer": "直接给出判断或解答：这些想法里真正的问题是什么、他可能漏了什么。不要复述、不要客套。若确实没有问题，就说清你从中看到的模式或倾向。不超过 120 字",',
+    '      "ask": "一个具体的、他能一句话回答的问题（不要「你怎么看」这类空话），不超过 30 字"',
+    "    }",
+    "  ]",
+    "}",
+    "硬要求：",
+    "1. 上面每一条想法都必须出现在某个主题的 ideaIds 里，id 原样照抄；",
+    "2. 主题数控制在 2-6 个，同一个话题不要拆成两个主题；",
+    "3. 只输出 JSON。"
+  ].join("\n");
+}
+
+async function organize(){
+  const list = ideas();
+  if (!list.length){ toast("还没有想法可以整理"); return; }
+  if (!aiReady()){ openSettings(); toast("先在设置里填 API Key，或打开假接口试跑"); return; }
+
+  const btn = $("#btnOrganize");
+  btn.disabled = true; btn.textContent = "整理中";
+  try{
+    const raw = await callAI([
+      { role: "system", content: SYS_ORGANIZE },
+      { role: "user", content: buildOrganizePrompt(list) }
+    ], 0.2);
+    const data = extractJson(raw);
+    if (!data || !Array.isArray(data.topics)) throw new Error("AI 返回的不是预期结构，再试一次");
+
+    const t = now();
+    // 整理是全量的：本次结果之外的主题一律作废。
+    // （主题名由 AI 现起，两次整理对不上，不清理就会每次多攒一批空壳主题）
+    const keep = new Set((data.topics || []).map((tp, i) =>
+      String(tp.name || ("主题" + (i + 1))).slice(0, 20)));
+    state.topics.forEach((x) => {
+      if (!x.deleted && !keep.has(x.name)){ x.deleted = true; x.updatedAt = t; }
+    });
+    (data.topics || []).forEach((tp, i) => {
+      const name = String(tp.name || ("主题" + (i + 1))).slice(0, 20);
+      let rec = alive(state.topics).find((x) => x.name === name);
+      if (!rec){
+        rec = { id: uid(), name: name, answer: "", ask: "", seq: i, updatedAt: t, deleted: false };
+        state.topics.push(rec);
+      }
+      rec.answer = tp.answer || "";
+      rec.ask = tp.ask || "";
+      rec.seq = i;
+      rec.updatedAt = t;
+      state.topics.forEach((x) => {
+        if (x.name === name && x.id !== rec.id && !x.deleted){ x.deleted = true; x.updatedAt = t; }
+      });
+      (tp.ideaIds || []).forEach((iid) => {
+        const it = getItem(iid);
+        if (it && it.kind === "idea"){ it.topicId = rec.id; it.updatedAt = t; }
+      });
+    });
+
+    state.overview = data.overview || "";
+    state.overviewAt = t;
+    state.lastOrganizedAt = t;
+    state.view = "topics";
+    save(); render(); scheduleSync();
+    toast("整理完成");
+  }catch(e){
+    toast((e && e.message) ? e.message : "整理失败");
+  }finally{
+    btn.disabled = false; btn.textContent = "整理";
+  }
+}
+
+/* ========== Gist 同步 ========== */
+const syncReady = () => !!state.settings.gistToken;
+
+/* 别的工具占用的文件名。混进同一仓库不会丢数据（PATCH 只提交自己的文件，
+   未提及的文件 GitHub 保持不变），但会让设备认领和排查变乱 ——
+   所以认领时优先避开，万一只剩混用的就明确告知。 */
+const FOREIGN_FILES = ["taskflow-data.json"];
+let _mixedRepo = false, _mixedWarned = false;
+
+function isMixedRepo(g){
+  if (!g || !g.files) return false;
+  return FOREIGN_FILES.some((f) => !!g.files[f]);
+}
+function warnMixedRepo(){
+  _mixedRepo = true;
+  if (_mixedWarned) return;
+  _mixedWarned = true;
+  toast("这个仓库里还有 Thoughtflow 的数据。想分开：去 GitHub 删掉本仓库的 ideaflow.json，"
+    + "再把上面的「同步仓库 ID」清空、重新同步。", 10000);
+}
+
+/* 自动同步：防抖（连续操作合并成一次）+ 单飞（不许两个同步重叠） */
+let _syncTimer = null, _syncing = false, _syncPending = false, _syncErrShown = false;
+
+function scheduleSync(delay){
+  if (!state.settings.autoSync || !syncReady()) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(runAutoSync, delay == null ? 2500 : delay);
+}
+
+async function runAutoSync(){
+  if (!state.settings.autoSync || !syncReady()) return;
+  if (_syncing){ _syncPending = true; return; }
+  _syncing = true;
+  try{
+    const remote = await pullRemote();
+    if (remote) applyPayload(remote);
+    await pushRemote();
+    save(); render();
+    _syncErrShown = false;
+  }catch(e){
+    // 失败只提醒一次，别让离线时每记一条都弹
+    if (!_syncErrShown){
+      _syncErrShown = true;
+      toast("自动同步失败，数据仍在本地（可点「同步」重试）");
+    }
+  }finally{
+    _syncing = false;
+    if (_syncPending){ _syncPending = false; runAutoSync(); }
+  }
+}
+
+async function gistRequest(url, opts){
+  const o = opts || {};
+  o.headers = Object.assign({
+    "Accept": "application/vnd.github+json",
+    "Authorization": "Bearer " + state.settings.gistToken
+  }, o.headers || {});
+  const res = await fetch(url, o);
+  if (!res.ok){
+    if (res.status === 401) throw new Error("Token 被拒（401）：检查 GitHub Token 是否有效、是否有 gist 权限");
+    if (res.status === 404) throw new Error("找不到仓库（404）：Gist ID 可能填错，或这个 Token 无权访问");
+    throw new Error("GitHub 返回 " + res.status);
+  }
+  return res.json();
+}
+
+async function readGistPayload(gist, gistId){
+  let g = gist;
+  const f = g && g.files && g.files[GIST_FILE];
+  const hasContent = f && typeof f.content === "string" && f.content.length;
+  if (!hasContent && gistId) g = await gistRequest(GIST_API + "/" + gistId);
+  const f2 = g && g.files && g.files[GIST_FILE];
+  if (!f2 || !f2.content) return null;
+  try{ return JSON.parse(f2.content); }catch(e){ return null; }
+}
+
+/* 第一次挂到已有仓库上时也必须先拉云端再合并，否则本地会覆盖远端 */
+async function pullRemote(){
+  let gistId = state.settings.gistId;
+  let htmlUrl = "", target = null;
+
+  if (!gistId){
+    const list = await gistRequest(GIST_API + "?per_page=100");
+    const cands = (list || []).filter((g) => g && g.files && g.files[GIST_FILE]);
+    // 优先挑没混进别的工具数据的仓库；全是混用的才退回第一个
+    target = cands.find((g) => !isMixedRepo(g)) || cands[0] || null;
+    if (target){ gistId = target.id; htmlUrl = target.html_url || ""; }
+  }else{
+    const g = await gistRequest(GIST_API + "/" + gistId);
+    target = g || null;
+    htmlUrl = (g && g.html_url) || state.settings.gistHtmlUrl || "";
+  }
+
+  state.settings.gistId = gistId || "";
+  if (htmlUrl) state.settings.gistHtmlUrl = htmlUrl;
+
+  if (target && isMixedRepo(target)) warnMixedRepo();
+  else if (target){ _mixedRepo = false; _mixedWarned = false; }
+
+  return target ? await readGistPayload(target, gistId) : null;
+}
+
+async function pushRemote(){
+  const files = {};
+  files[GIST_FILE] = { content: JSON.stringify(buildPayload(), null, 1) };
+  if (state.settings.gistId){
+    const g = await gistRequest(GIST_API + "/" + state.settings.gistId, { method: "PATCH", body: JSON.stringify({ files: files }) });
+    state.settings.gistHtmlUrl = g.html_url || state.settings.gistHtmlUrl;
+  }else{
+    const g = await gistRequest(GIST_API, {
+      method: "POST",
+      body: JSON.stringify({ description: "想法池 Ideaflow 同步数据（请勿手动编辑）", public: false, files: files })
+    });
+    state.settings.gistId = g.id;
+    state.settings.gistHtmlUrl = g.html_url || "";
+  }
+  save();
+}
+
+async function syncBoth(){
+  if (!syncReady()){ openSettings(); setStatus("syncStatus", "先填 GitHub Token", "warn"); return; }
+  if (_syncing){ setStatus("syncStatus", "同步正在进行，稍等", "warn"); return; }
+  _syncing = true;
+  setStatus("syncStatus", "同步中…", "");
+  try{
+    const remote = await pullRemote();
+    if (remote) applyPayload(remote);
+    await pushRemote();
+    save(); render();
+    setStatus("syncStatus", "同步完成（本地 " + alive(state.items).length + " 条记录）", "ok");
+    _syncErrShown = false;
+  }catch(e){ setStatus("syncStatus", (e && e.message) || "同步失败", "bad"); }
+  finally{ _syncing = false; }
+}
+
+async function pullOnly(){
+  if (!syncReady()){ openSettings(); setStatus("syncStatus", "先填 GitHub Token", "warn"); return; }
+  setStatus("syncStatus", "拉取中…", "");
+  try{
+    const remote = await pullRemote();
+    if (!remote){ setStatus("syncStatus", "云端还没有数据", "warn"); return; }
+    applyPayload(remote); save(); render();
+    setStatus("syncStatus", "已拉取并合并云端数据", "ok");
+  }catch(e){ setStatus("syncStatus", (e && e.message) || "拉取失败", "bad"); }
+}
+
+async function pushOnly(){
+  if (!syncReady()){ openSettings(); setStatus("syncStatus", "先填 GitHub Token", "warn"); return; }
+  setStatus("syncStatus", "推送中…", "");
+  try{ await pushRemote(); setStatus("syncStatus", "已推送本地数据", "ok"); }
+  catch(e){ setStatus("syncStatus", (e && e.message) || "推送失败", "bad"); }
+}
+
+/* ========== 渲染 ========== */
+let _keepY = null;
+function render(){
+  $("#main").innerHTML = state.view === "topics" ? viewTopics() : viewTimeline();
+  if (_keepY != null){ const y = _keepY; _keepY = null; window.scrollTo(0, y); }
+}
+const keepScroll = () => { _keepY = window.scrollY; };
+
+function viewTimeline(){
+  const list = ideas();
+  if (!list.length){
+    return '<div class="empty">'
+      + "<h2>还没有想法</h2>"
+      + '<p class="strong">下面写第一条 —— 不用成句，不用分类，想到什么写什么。</p>'
+      + '<p class="hintline">攒几条之后，点上面的「整理」。它会把你的想法归到几个主题下、'
+      + "指出你没想清的地方，并反问你。</p>"
+      + "</div>";
+  }
+  let html = "";
+  let curDay = "";
+  let openList = false;
+  for (const it of list){
+    const k = dayKey(it.ts);
+    if (k !== curDay){
+      if (openList){ html += "</ul>"; openList = false; }
+      curDay = k;
+      const lb = dayLabel(k);
+      html += '<div class="day"><b>' + esc(lb.main) + "</b><span>" + esc(lb.sub) + "</span></div>"
+        + '<ul class="feed">';
+      openList = true;
+    }
+    const tp = it.topicId ? topicById(it.topicId) : null;
+    const th = msgsOf(it.id);
+    const open = !!state.openThreads[it.id];
+    html += '<li class="item">';
+    html += '<p class="body">' + esc(it.text) + "</p>";
+    html += '<div class="meta"><span class="n">' + hhmm(it.ts) + "</span>";
+    if (tp) html += '<span class="sep">·</span><span class="tag">' + esc(tp.name) + "</span>";
+    if (th.length) html += '<span class="sep">·</span><span class="n">' + th.length + " 条讨论</span>";
+    html += '<span class="acts2">'
+      + '<button class="mini" data-act="toggle" data-id="' + it.id + '">'
+      + (open ? "收起" : (th.length ? "继续讨论" : "讨论")) + "</button>"
+      + '<button class="mini del" data-act="del" data-id="' + it.id + '">删除</button>'
+      + "</span></div>";
+    if (open){
+      html += '<div class="thread">';
+      for (const m of th){
+        if (m.role === "ai"){
+          html += '<div class="msg ' + (m.err ? "err" : "ai") + '">' + (m.err ? esc(m.text) : md(m.text)) + "</div>";
+        }else{
+          html += '<div class="msg me">' + esc(m.text) + "</div>";
+        }
+      }
+      if (state.busy[it.id]){
+        html += '<div class="pending" role="status">AI 正在回应…</div>';
+      }else{
+        html += '<div class="reply"><textarea data-ask="' + it.id + '" rows="1"'
+          + ' placeholder="追问、反驳、补充…"></textarea>'
+          + '<button class="send" data-act="ask" data-id="' + it.id + '">发送</button></div>';
+      }
+      html += "</div>";
+    }
+    html += "</li>";
+  }
+  if (openList) html += "</ul>";
+  return html;
+}
+
+function viewTopics(){
+  const ts = alive(state.topics).sort((a, b) => (a.seq || 0) - (b.seq || 0));
+  const grouped = {};
+  for (const it of ideas()){
+    const k = it.topicId && topicById(it.topicId) ? it.topicId : "__none";
+    (grouped[k] = grouped[k] || []).push(it);
+  }
+  const loose = grouped.__none || [];
+  if (!ts.length && !loose.length){
+    return '<div class="empty">'
+      + "<h2>还没整理过</h2>"
+      + '<p class="strong">先在「时间线」里记几条，再点上面的「整理」。</p>'
+      + '<p class="hintline">它会把这些想法归到几个主题下、指出你没想清的地方，并反问你。</p>'
+      + "</div>";
+  }
+  let html = "";
+  if (state.overview){
+    html += '<div class="ov"><div class="ov-label">整体观察 · '
+      + esc(new Date(state.overviewAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }))
+      + "</div><p>" + esc(state.overview) + "</p></div>";
+  }
+  for (const tp of ts){
+    const list = grouped[tp.id] || [];
+    html += '<section class="topic">';
+    html += "<h3>" + esc(tp.name) + '<span class="n">' + list.length + " 条</span></h3>";
+    if (tp.answer) html += '<p class="answer">' + esc(tp.answer) + "</p>";
+    if (tp.ask) html += '<p class="ask">' + esc(tp.ask) + "</p>";
+    if (list.length){
+      html += '<ul class="plist">';
+      for (const it of list) html += "<li><time>" + hhmm(it.ts) + "</time><span>" + esc(it.text) + "</span></li>";
+      html += "</ul>";
+    }
+    html += "</section>";
+  }
+  if (loose.length){
+    html += '<section class="topic"><h3>还没归类的<span class="n">' + loose.length + " 条</span></h3>"
+      + '<ul class="plist">';
+    for (const it of loose) html += "<li><time>" + hhmm(it.ts) + "</time><span>" + esc(it.text) + "</span></li>";
+    html += "</ul></section>";
+  }
+  return html;
+}
+
+/* ========== toast ========== */
+let _toastTimer = null;
+function toast(msg, ms){
+  const el = $("#toast");
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("on"), ms || 3200);
+}
+
+/* ========== 设置 ========== */
+function setStatus(where, text, kind){
+  const el = where === "syncStatus" ? $("#syncStatus") : $("#aiStatus");
+  el.textContent = text || "";
+  el.className = "status " + (kind || "");
+}
+
+function openSettings(){
+  const s = state.settings;
+  $("#setUrl").value = s.apiUrl;
+  $("#setModel").value = s.model;
+  $("#setKey").value = s.apiKey;
+  $("#setMock").checked = !!s.mock;
+  $("#setGistToken").value = s.gistToken;
+  $("#setGistId").value = s.gistId;
+  $("#setAutoSync").checked = s.autoSync !== false;
+  const hint = $("#gistLinkHint");
+  hint.innerHTML = s.gistHtmlUrl
+    ? '当前仓库：<a href="' + esc(s.gistHtmlUrl) + '" target="_blank" rel="noreferrer">' + esc(s.gistHtmlUrl) + "</a>"
+    : "还没有同步仓库。留空并点「立即同步」，会自动新建一个私有 Gist。";
+  if (_mixedRepo){
+    hint.innerHTML += '<span class="mixwarn">这个仓库里还有 Thoughtflow 的数据。'
+      + "建议分开：去 GitHub 删掉本仓库的 ideaflow.json，再把上面的「同步仓库 ID」清空、重新同步。</span>";
+  }
+  $("#dlgSettings").showModal();
+}
+function saveSettingsFromForm(){
+  const s = state.settings;
+  s.apiUrl = $("#setUrl").value.trim();
+  s.model = $("#setModel").value.trim() || "deepseek-chat";
+  s.apiKey = $("#setKey").value.trim();
+  s.mock = $("#setMock").checked;
+  s.gistToken = $("#setGistToken").value.trim();
+  s.gistId = $("#setGistId").value.trim();
+  s.autoSync = $("#setAutoSync").checked;
+  save();
+}
+
+async function testAI(){
+  saveSettingsFromForm();
+  const el = $("#aiStatus");
+  el.className = "status"; el.textContent = "测试中…";
+  try{
+    const out = await callAI([{ role: "user", content: "只回复两个字：可用" }], 0);
+    el.className = "status ok";
+    el.textContent = "连通正常，模型返回：" + String(out).slice(0, 30);
+  }catch(e){
+    el.className = "status bad";
+    el.textContent = (e && e.message) ? e.message : "连接失败";
+  }
+}
+
+function switchView(v){
+  state.view = v;
+  $("#tabTimeline").setAttribute("aria-selected", String(v === "timeline"));
+  $("#tabTopics").setAttribute("aria-selected", String(v === "topics"));
+  render();
+}
+
+function submitIdea(){
+  const ta = $("#composerText");
+  const text = ta.value.trim();
+  if (!text) return;
+  addIdea(text);
+  ta.value = "";
+  if (state.view !== "timeline") switchView("timeline"); else render();
+  window.scrollTo(0, 0);
+}
+
+function exportJson(){
+  const blob = new Blob([JSON.stringify(buildPayload(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ideaflow-" + dayKey(now()) + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast("已导出");
+}
+function importJson(e){
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      applyPayload(JSON.parse(r.result));
+      save(); render(); scheduleSync();
+      toast("已导入并合并");
+    }catch(err){ toast("这个文件不是有效的导出文件"); }
+  };
+  r.readAsText(f);
+  e.target.value = "";
+}
+
+/* ========== 事件 ========== */
+function bind(){
+  $("#tabTimeline").addEventListener("click", () => switchView("timeline"));
+  $("#tabTopics").addEventListener("click", () => switchView("topics"));
+  $("#btnSettings").addEventListener("click", openSettings);
+  $("#btnOrganize").addEventListener("click", organize);
+  $("#btnSync").addEventListener("click", syncBoth);
+
+  $("#btnAdd").addEventListener("click", submitIdea);
+  const grow = (el) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 150) + "px";
+  };
+  $("#composerText").addEventListener("input", (e) => grow(e.target));
+  $("#main").addEventListener("input", (e) => {
+    if (e.target.tagName === "TEXTAREA" && e.target.dataset.ask) grow(e.target);
+  });
+  $("#composerText").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); submitIdea(); }
+  });
+
+  $("#main").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]");
+    if (!b) return;
+    const id = b.dataset.id, act = b.dataset.act;
+    if (act === "toggle"){
+      state.openThreads[id] = !state.openThreads[id];
+      keepScroll(); render();
+    }else if (act === "del"){
+      if (confirm("删除这条想法？连同它的讨论一起删。")){
+        msgsOf(id).forEach((m) => removeItem(m.id));
+        removeItem(id);
+        keepScroll(); render();
+      }
+    }else if (act === "ask"){
+      const ta = $('#main textarea[data-ask="' + id + '"]');
+      discuss(id, ta ? ta.value : "");
+    }
+  });
+
+  $("#main").addEventListener("keydown", (e) => {
+    const ta = e.target;
+    if (ta.tagName !== "TEXTAREA" || !ta.dataset.ask) return;
+    if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); discuss(ta.dataset.ask, ta.value); }
+  });
+
+  $("#btnCloseSettings").addEventListener("click", () => $("#dlgSettings").close());
+  $("#btnSaveSettings").addEventListener("click", () => { saveSettingsFromForm(); $("#dlgSettings").close(); render(); });
+  $("#setMock").addEventListener("change", saveSettingsFromForm);
+  $("#setAutoSync").addEventListener("change", saveSettingsFromForm);
+  $("#btnTestAI").addEventListener("click", testAI);
+  $("#btnSyncNow").addEventListener("click", () => { saveSettingsFromForm(); syncBoth(); });
+  $("#btnPull").addEventListener("click", () => { saveSettingsFromForm(); pullOnly(); });
+  $("#btnPush").addEventListener("click", () => { saveSettingsFromForm(); pushOnly(); });
+  $("#btnExport").addEventListener("click", exportJson);
+  $("#btnImport").addEventListener("click", () => $("#filePicker").click());
+  $("#filePicker").addEventListener("change", importJson);
+}
+
+/* ========== 启动 ========== */
+load();
+bind();
+render();
+if (!localStorage.getItem(DATA_KEY) && !ideas().length){
+  addIdea("示例：为什么我记了很多笔记，但事后并不觉得自己想过什么？");
+  render();
+}
+// 打开时自动拉一次（只在配了 Token 且开了自动同步时生效）
+scheduleSync(1500);
+</script>
+</body>
+</html>
